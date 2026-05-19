@@ -1,20 +1,28 @@
 import os
 import json
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
+app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key")
 
-firebase_key = json.loads(os.environ.get("FIREBASE_KEY"))
-cred = credentials.Certificate(firebase_key)
+# ================= FIREBASE =================
+
+firebase_key = os.environ.get("FIREBASE_KEY")
+
+if not firebase_key:
+    raise Exception("FIREBASE_KEY not set in environment variables")
+
+cred = credentials.Certificate(json.loads(firebase_key))
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# ---------------- HOME (DASHBOARD) ----------------
+# ================= HOME =================
+
 @app.route('/')
 def index():
     if 'user' not in session:
@@ -22,91 +30,146 @@ def index():
 
     uid = session['user']
 
-    docs = db.collection('expenses').where('uid', '==', uid).stream()
+    expenses_ref = db.collection('expenses').where('uid', '==', uid)
+    docs = expenses_ref.stream()
 
-    yearly_data = {}
     total = 0
+    monthly_total = 0
+    yearly_total = 0
+
+    category_totals = {}
+    monthly_data = {}
+
+    current_month = datetime.now().month
+    current_year = datetime.now().year
 
     for doc in docs:
-        d = doc.to_dict()
-        d['id'] = doc.id
+        data = doc.to_dict()
+        data['id'] = doc.id
 
-        amount = float(d['amount'])
+        amount = float(data['amount'])
         total += amount
 
-        date = datetime.strptime(d['date'], "%d-%m-%Y")
-        year = str(date.year)
-        month = date.strftime("%B")
+        expense_date = datetime.strptime(data['date'], "%d-%m-%Y")
 
-        yearly_data.setdefault(year, {})
-        yearly_data[year].setdefault(month, {"expenses": [], "total": 0})
+        month_key = expense_date.strftime("%Y-%m")
+        month_label = expense_date.strftime("%B %Y")
 
-        yearly_data[year][month]["expenses"].append(d)
-        yearly_data[year][month]["total"] += amount
+        if month_key not in monthly_data:
+            monthly_data[month_key] = {
+                "label": month_label,
+                "expenses": [],
+                "total": 0
+            }
 
-    return render_template("dashboard.html",
-        yearly_data=yearly_data,
+        monthly_data[month_key]["expenses"].append(data)
+        monthly_data[month_key]["total"] += amount
+
+        if expense_date.month == current_month and expense_date.year == current_year:
+            monthly_total += amount
+
+        if expense_date.year == current_year:
+            yearly_total += amount
+
+        category = data['category']
+        category_totals[category] = category_totals.get(category, 0) + amount
+
+    # sort months newest first
+    monthly_data = dict(sorted(monthly_data.items(), reverse=True))
+
+    return render_template(
+        'index.html',
         total=round(total, 2),
+        monthly_total=round(monthly_total, 2),
+        yearly_total=round(yearly_total, 2),
+        category_totals=category_totals,
+        monthly_data=monthly_data,
+        today=datetime.now().strftime("%d %B %Y"),
         email=session.get('email')
     )
 
-# ---------------- ADD ----------------
+# ================= ADD =================
+
 @app.route('/add', methods=['POST'])
 def add_expense():
     if 'user' not in session:
-        return jsonify({"status": "error"})
+        return redirect('/login')
 
     uid = session['user']
 
     db.collection('expenses').add({
-        "title": request.form['title'],
-        "amount": request.form['amount'],
-        "category": request.form['category'],
-        "date": datetime.now().strftime("%d-%m-%Y"),
-        "uid": uid
+        'title': request.form['title'],
+        'amount': float(request.form['amount']),
+        'category': request.form['category'],
+        'date': datetime.now().strftime("%d-%m-%Y"),
+        'uid': uid
     })
 
-    return jsonify({"status": "success"})
-
-# ---------------- DELETE ----------------
-@app.route('/delete/<id>')
-def delete(id):
-    db.collection('expenses').document(id).delete()
     return redirect('/')
 
-# ---------------- LOGIN ----------------
+# ================= DELETE =================
+
+@app.route('/delete/<id>')
+def delete_expense(id):
+    if 'user' not in session:
+        return redirect('/login')
+
+    doc = db.collection('expenses').document(id).get()
+
+    if doc.exists and doc.to_dict().get('uid') == session['user']:
+        db.collection('expenses').document(id).delete()
+
+    return redirect('/')
+
+# ================= LOGOUT =================
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+# ================= LOGIN =================
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+
         email = request.form['email']
         password = request.form['password']
 
-        users = db.collection('users').where('email', '==', email).stream()
+        users = list(db.collection('users').where('email', '==', email).stream())
 
-        for u in users:
-            user = u.to_dict()
-            if user['password'] == password:
-                session['user'] = user['uid']
-                session['email'] = email
-                return redirect('/')
+        if not users:
+            return "User not found"
+
+        user_data = users[0].to_dict()
+
+        if check_password_hash(user_data['password'], password):
+
+            session['user'] = user_data['uid']
+            session['email'] = email
+
+            return redirect('/')
 
         return "Invalid credentials"
 
-    return render_template("login.html")
+    return render_template('login.html')
 
-# ---------------- SIGNUP ----------------
+# ================= SIGNUP =================
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
+
         email = request.form['email']
         password = request.form['password']
 
         uid = email + "_uid"
 
-        db.collection('users').add({
-            "email": email,
-            "password": password,
-            "uid": uid
+        db.collection('users').document(uid).set({
+            'email': email,
+            'password': generate_password_hash(password),
+            'uid': uid
         })
 
         session['user'] = uid
@@ -114,13 +177,8 @@ def signup():
 
         return redirect('/')
 
-    return render_template("signup.html")
+    return render_template('signup.html')
 
-# ---------------- LOGOUT ----------------
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,254 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Expense Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartExpense Tracker</title>
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-* { box-sizing: border-box; font-family: Arial, sans-serif; }
-
-body {
-  margin: 0;
-  background: #0f172a;
-  color: #e2e8f0;
-}
-
-/* HEADER */
-header {
-  padding: 16px;
-  background: #111827;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-header h1 {
-  font-size: 18px;
-}
-
-/* LAYOUT */
-.container {
-  padding: 16px;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-/* CARDS */
-.card {
-  background: #1e293b;
-  padding: 14px;
-  border-radius: 12px;
-}
-
-/* GRID */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.box {
-  background: #334155;
-  padding: 12px;
-  border-radius: 10px;
-  text-align: center;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.box:hover {
-  background: #475569;
-}
-
-/* BUTTON */
-button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #3b82f6;
-  color: white;
-  cursor: pointer;
-}
-
-/* TABLE */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-td, th {
-  padding: 8px;
-  border-bottom: 1px solid #334155;
-}
-
-/* MOBILE */
-@media(max-width:600px){
-  header h1 { font-size: 16px; }
-}
-</style>
 </head>
 
 <body>
 
-<header>
-  <h1>Expense SaaS Dashboard</h1>
-  <button onclick="resetView()">Home</button>
-</header>
+<div class="container py-5">
 
-<div class="container">
+<!-- HEADER -->
+<div class="d-flex justify-content-between align-items-center mb-5">
 
-  <!-- CHART -->
-  <div class="card">
-    <canvas id="expenseChart"></canvas>
-  </div>
+    <div>
+        <h1 class="main-title">SmartExpense Tracker</h1>
+        <p class="date-text">{{ today }}</p>
+    </div>
 
-  <!-- MAIN VIEW -->
-  <div class="card" id="mainView"></div>
+    <div>
+        <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+    </div>
 
 </div>
 
+<!-- ADD EXPENSE -->
+<div class="glass-card p-4 mb-5">
+
+<form action="/add" method="POST">
+
+<div class="row g-3">
+
+<input class="col-md-4 form-control custom-input"
+       name="title"
+       placeholder="Expense Title"
+       required>
+
+<input class="col-md-3 form-control custom-input"
+       name="amount"
+       type="number"
+       placeholder="Amount"
+       required>
+
+<select class="col-md-3 form-control custom-input" name="category">
+    <option>Food</option>
+    <option>Travel</option>
+    <option>Shopping</option>
+    <option>Bills</option>
+    <option>Entertainment</option>
+    <option>Health</option>
+    <option>Education</option>
+    <option>Other</option>
+</select>
+
+<button class="col-md-2 btn add-btn">Add</button>
+
+</div>
+
+</form>
+
+</div>
+
+<!-- STATS -->
+<div class="row mb-5">
+
+<div class="col-md-4">
+<div class="stats-card">Total<br><h2>₹ {{ total }}</h2></div>
+</div>
+
+<div class="col-md-4">
+<div class="stats-card">Month<br><h2>₹ {{ monthly_total }}</h2></div>
+</div>
+
+<div class="col-md-4">
+<div class="stats-card">Year<br><h2>₹ {{ yearly_total }}</h2></div>
+</div>
+
+</div>
+
+<!-- CHART -->
+<div class="glass-card p-4 mb-5">
+<h3 class="text-center">Expense Analytics</h3>
+<canvas id="expenseChart"></canvas>
+</div>
+
+<!-- MONTHLY DATA -->
+{% for key, data in monthly_data.items() %}
+<div class="glass-card p-4 mb-4">
+
+<div class="d-flex justify-content-between">
+    <h3 class="month-title">{{ data.label }}</h3>
+    <div class="month-total">₹ {{ data.total }}</div>
+</div>
+
+<table class="table table-dark table-hover mt-3">
+
+<thead>
+<tr>
+<th>Title</th>
+<th>Amount</th>
+<th>Category</th>
+<th>Date</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for e in data.expenses %}
+<tr>
+<td>{{ e.title }}</td>
+<td>₹ {{ e.amount }}</td>
+<td>{{ e.category }}</td>
+<td>{{ e.date }}</td>
+<td>
+<a class="btn btn-danger btn-sm"
+   onclick="return confirm('Delete this expense?')"
+   href="/delete/{{ e.id }}">
+Delete
+</a>
+</td>
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+{% endfor %}
+
+</div>
+
+<!-- ✅ SAFE CHART DATA (NO VS CODE ERRORS) -->
 <script>
-const data = {
-  2024: {
-    Jan: [{title:"Food", amount:1200},{title:"Travel", amount:3000}],
-    Feb: [{title:"Shopping", amount:2200}],
-  },
-  2025: {
-    Jan: [{title:"Food", amount:1500}],
-    Mar: [{title:"Bills", amount:4000}]
-  }
-};
+    const chartData = JSON.parse('{{ category_totals | tojson | safe }}');
 
-let state = { level: "year", year: null, month: null };
+    const labels = Object.keys(chartData);
+    const values = Object.values(chartData);
 
-function render() {
-  const main = document.getElementById("mainView");
-  main.innerHTML = "";
-
-  if (state.level === "year") {
-    renderYears(main);
-  } 
-  else if (state.level === "month") {
-    renderMonths(main);
-  } 
-  else {
-    renderExpenses(main);
-  }
-
-  updateChart();
-}
-
-/* YEAR VIEW */
-function renderYears(main) {
-  let html = `<h3>Select Year</h3><div class="grid">`;
-
-  Object.keys(data).forEach(year => {
-    html += `<div class="box" onclick="openYear('${year}')">${year}</div>`;
-  });
-
-  html += `</div>`;
-  main.innerHTML = html;
-}
-
-/* MONTH VIEW */
-function renderMonths(main) {
-  const months = Object.keys(data[state.year]);
-
-  let html = `<h3>${state.year} - Months</h3><div class="grid">`;
-
-  months.forEach(m => {
-    const total = data[state.year][m]
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    html += `
-      <div class="box" onclick="openMonth('${m}')">
-        ${m}<br><small>₹${total}</small>
-      </div>`;
-  });
-
-  html += `</div>`;
-  main.innerHTML = html;
-}
-
-/* EXPENSE VIEW */
-function renderExpenses(main) {
-  const list = data[state.year][state.month];
-
-  let html = `<h3>${state.month} Expenses</h3>
-  <table>
-    <tr><th>Title</th><th>Amount</th></tr>`;
-
-  list.forEach(e => {
-    html += `<tr><td>${e.title}</td><td>₹${e.amount}</td></tr>`;
-  });
-
-  html += `</table>`;
-  main.innerHTML = html;
-}
-
-/* NAVIGATION */
-function openYear(year){
-  state = { level:"month", year, month:null };
-  render();
-}
-
-function openMonth(month){
-  state = { ...state, level:"expense", month };
-  render();
-}
-
-function resetView(){
-  state = { level:"year", year:null, month:null };
-  render();
-}
-
-/* CHART */
-let chart;
-
-function updateChart() {
-  const ctx = document.getElementById("expenseChart");
-
-  let labels = [];
-  let values = [];
-
-  if (state.level === "year") {
-    labels = Object.keys(data);
-    values = labels.map(y =>
-      Object.values(data[y])
-        .flat()
-        .reduce((s,e)=>s+e.amount,0)
-    );
-  }
-  else if (state.level === "month") {
-    labels = Object.keys(data[state.year]);
-    values = labels.map(m =>
-      data[state.year][m].reduce((s,e)=>s+e.amount,0)
-    );
-  }
-  else {
-    labels = data[state.year][state.month].map(e=>e.title);
-    values = data[state.year][state.month].map(e=>e.amount);
-  }
-
-  if(chart) chart.destroy();
-
-  chart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Expenses",
-        data: values
-      }]
-    }
-  });
-}
-
-render();
+    new Chart(document.getElementById('expenseChart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#6366F1','#8B5CF6','#06B6D4','#10B981',
+                    '#F59E0B','#EF4444','#EC4899','#84CC16'
+                ]
+            }]
+        }
+    });
 </script>
 
 </body>

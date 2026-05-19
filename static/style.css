@@ -1,266 +1,38 @@
 body {
-
-    background: linear-gradient(135deg, #0f172a, #111827);
-
+    background: linear-gradient(135deg,#0f172a,#111827);
     font-family: 'Poppins', sans-serif;
-
     color: white;
-
-    min-height: 100vh;
 }
 
-/* HEADER */
-
-.main-title {
-
-    font-size: 3rem;
-
-    font-weight: 700;
-}
-
-.date-text {
-
-    color: #cbd5e1;
-
-    font-size: 1rem;
-}
-
-/* GLASS CARD */
+.main-title { font-size: 2.5rem; font-weight: 700; }
 
 .glass-card {
-
     background: rgba(255,255,255,0.08);
-
     backdrop-filter: blur(12px);
-
     border-radius: 20px;
-
-    border: 1px solid rgba(255,255,255,0.08);
-
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-
-    transition: 0.3s;
+    padding: 20px;
 }
-
-.glass-card:hover {
-
-    transform: translateY(-3px);
-}
-
-/* INPUTS */
 
 .custom-input {
-
     background: rgba(255,255,255,0.08);
-
     border: none;
-
-    border-radius: 12px;
-
-    padding: 12px;
-
     color: white;
-}
-
-/* DROPDOWN FIX */
-
-select.custom-input {
-
-    color: white;
-    background-color: rgba(255,255,255,0.08);
-}
-
-select.custom-input option {
-
-    background-color: #111827;
-    color: white;
-}
-
-.custom-input:focus {
-
-    background: rgba(255,255,255,0.12);
-
-    color: white;
-
-    box-shadow: 0 0 12px #6366F1;
-}
-
-.custom-input::placeholder {
-
-    color: #cbd5e1;
-}
-
-/* BUTTON */
-
-.add-btn {
-
-    background: linear-gradient(
-        135deg,
-        #6366F1,
-        #8B5CF6
-    );
-
-    border: none;
-
-    border-radius: 12px;
-
-    color: white;
-
-    font-weight: 600;
-
-    padding: 12px;
-
-    transition: 0.3s;
-}
-
-.add-btn:hover {
-
-    transform: scale(1.03);
-
-    box-shadow: 0 0 20px rgba(99,102,241,0.5);
-
-    color: white;
-}
-
-/* DASHBOARD CARDS */
-
-.stats-card {
-
-    background: linear-gradient(
-        135deg,
-        #6366F1,
-        #8B5CF6
-    );
-
-    padding: 25px;
-
-    border-radius: 20px;
-
-    text-align: center;
-
-    box-shadow: 0 10px 25px rgba(99,102,241,0.4);
-
-    transition: 0.3s;
-}
-
-.stats-card:hover {
-
-    transform: translateY(-5px);
-}
-
-.stats-card h2 {
-
-    font-size: 2rem;
-
-    font-weight: 700;
-}
-
-/* MONTH SECTION */
-
-.month-title {
-
-    font-size: 1.5rem;
-
-    font-weight: 600;
-}
-
-.month-total {
-
-    background: linear-gradient(
-        135deg,
-        #6366F1,
-        #8B5CF6
-    );
-
-    padding: 10px 18px;
-
-    border-radius: 12px;
-
-    font-weight: 600;
-
-    box-shadow: 0 5px 15px rgba(99,102,241,0.4);
-}
-
-/* TABLE */
-
-.table {
-
-    border-radius: 16px;
-
-    overflow: hidden;
-}
-
-.table-dark {
-
-    --bs-table-bg: transparent;
-}
-
-.table th {
-
-    background-color: rgba(255,255,255,0.08);
-
-    color: #cbd5e1;
-
-    border: none;
-}
-
-.table td {
-
-    border-color: rgba(255,255,255,0.05);
-}
-
-.table-hover tbody tr:hover {
-
-    background-color: rgba(255,255,255,0.05);
-}
-
-/* CHART */
-
-canvas {
-
-    max-width: 450px;
-
-    margin: auto;
-}
-
-/* DELETE BUTTON */
-
-.btn-danger {
-
     border-radius: 10px;
 }
 
-/* SCROLLBAR */
-
-::-webkit-scrollbar {
-
-    width: 8px;
+.add-btn {
+    background: linear-gradient(135deg,#6366F1,#8B5CF6);
+    border: none;
+    color: white;
+    border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb {
-
-    background: #6366F1;
-
-    border-radius: 20px;
+.stats-card {
+    background: linear-gradient(135deg,#6366F1,#8B5CF6);
+    padding: 20px;
+    border-radius: 15px;
 }
 
-/* MOBILE */
-
-@media(max-width:768px){
-
-    .main-title {
-
-        font-size: 2rem;
-    }
-
-    .stats-card h2 {
-
-        font-size: 1.5rem;
-    }
-
-    .month-title {
-
-        font-size: 1.2rem;
-    }
-
+.table-dark {
+    --bs-table-bg: transparent;
 }
