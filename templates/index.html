@@ -1,149 +1,254 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Expense SaaS</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Expense Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{
-    background:#0f172a;
-    color:white;
+* { box-sizing: border-box; font-family: Arial, sans-serif; }
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
 }
 
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:15px;
-    background:#111827;
+/* HEADER */
+header {
+  padding: 16px;
+  background: #111827;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.card-box{
-    background:#111827;
-    border-radius:15px;
-    padding:15px;
-    margin-bottom:10px;
+header h1 {
+  font-size: 18px;
 }
 
-button, .btn{
-    border-radius:10px;
+/* LAYOUT */
+.container {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
-input, select{
-    background:#1f2937 !important;
-    color:white !important;
-    border:none !important;
+/* CARDS */
+.card {
+  background: #1e293b;
+  padding: 14px;
+  border-radius: 12px;
 }
 
-.month{
-    cursor:pointer;
-    padding:10px;
-    background:#1f2937;
-    border-radius:10px;
-    margin-top:10px;
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
 }
 
-.expense{
-    padding:8px;
-    border-bottom:1px solid #374151;
-    font-size:14px;
+.box {
+  background: #334155;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.box:hover {
+  background: #475569;
+}
+
+/* BUTTON */
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: white;
+  cursor: pointer;
+}
+
+/* TABLE */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td, th {
+  padding: 8px;
+  border-bottom: 1px solid #334155;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+  header h1 { font-size: 16px; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="topbar">
-<div>Hi {{ email }}</div>
-<a href="/logout" class="btn btn-danger btn-sm">Logout</a>
-</div>
+<header>
+  <h1>Expense SaaS Dashboard</h1>
+  <button onclick="resetView()">Home</button>
+</header>
 
-<div class="container mt-3">
+<div class="container">
 
-<h4>Total: ₹{{ total }}</h4>
+  <!-- CHART -->
+  <div class="card">
+    <canvas id="expenseChart"></canvas>
+  </div>
 
-<!-- ADD EXPENSE -->
-<div class="card-box">
-
-<form id="expenseForm">
-
-<input class="form-control mb-2" name="title" placeholder="Title">
-
-<input class="form-control mb-2" name="amount" placeholder="Amount">
-
-<select class="form-control mb-2" name="category">
-<option>Food</option>
-<option>Travel</option>
-<option>Shopping</option>
-<option>Bills</option>
-<option>Other</option>
-</select>
-
-<button class="btn btn-primary w-100">Add</button>
-
-</form>
-
-</div>
-
-<!-- YEAR → MONTH → EXPENSE -->
-{% for year, months in yearly_data.items() %}
-
-<div class="card-box">
-
-<h4>📅 {{ year }}</h4>
-
-{% for month, data in months.items() %}
-
-<div class="month" onclick="toggle('{{year}}{{month}}')">
-📆 {{ month }} — ₹{{ data.total }}
-</div>
-
-<div id="{{year}}{{month}}" style="display:none">
-
-{% for e in data.expenses %}
-
-<div class="expense">
-<b>{{ e.title }}</b> - ₹{{ e.amount }} ({{ e.category }})
-</div>
-
-{% endfor %}
-
-</div>
-
-{% endfor %}
-
-</div>
-
-{% endfor %}
+  <!-- MAIN VIEW -->
+  <div class="card" id="mainView"></div>
 
 </div>
 
 <script>
+const data = {
+  2024: {
+    Jan: [{title:"Food", amount:1200},{title:"Travel", amount:3000}],
+    Feb: [{title:"Shopping", amount:2200}],
+  },
+  2025: {
+    Jan: [{title:"Food", amount:1500}],
+    Mar: [{title:"Bills", amount:4000}]
+  }
+};
 
-// AJAX ADD (NO RELOAD)
-document.getElementById("expenseForm").addEventListener("submit", async function(e){
-e.preventDefault();
+let state = { level: "year", year: null, month: null };
 
-let formData = new FormData(this);
+function render() {
+  const main = document.getElementById("mainView");
+  main.innerHTML = "";
 
-let res = await fetch("/add", {
-method:"POST",
-body:formData
-});
+  if (state.level === "year") {
+    renderYears(main);
+  } 
+  else if (state.level === "month") {
+    renderMonths(main);
+  } 
+  else {
+    renderExpenses(main);
+  }
 
-let data = await res.json();
-
-if(data.status === "success"){
-location.reload();
+  updateChart();
 }
-});
 
-// TOGGLE MONTH
-function toggle(id){
-let el = document.getElementById(id);
-el.style.display = el.style.display === "none" ? "block" : "none";
+/* YEAR VIEW */
+function renderYears(main) {
+  let html = `<h3>Select Year</h3><div class="grid">`;
+
+  Object.keys(data).forEach(year => {
+    html += `<div class="box" onclick="openYear('${year}')">${year}</div>`;
+  });
+
+  html += `</div>`;
+  main.innerHTML = html;
 }
 
+/* MONTH VIEW */
+function renderMonths(main) {
+  const months = Object.keys(data[state.year]);
+
+  let html = `<h3>${state.year} - Months</h3><div class="grid">`;
+
+  months.forEach(m => {
+    const total = data[state.year][m]
+      .reduce((sum, e) => sum + e.amount, 0);
+
+    html += `
+      <div class="box" onclick="openMonth('${m}')">
+        ${m}<br><small>₹${total}</small>
+      </div>`;
+  });
+
+  html += `</div>`;
+  main.innerHTML = html;
+}
+
+/* EXPENSE VIEW */
+function renderExpenses(main) {
+  const list = data[state.year][state.month];
+
+  let html = `<h3>${state.month} Expenses</h3>
+  <table>
+    <tr><th>Title</th><th>Amount</th></tr>`;
+
+  list.forEach(e => {
+    html += `<tr><td>${e.title}</td><td>₹${e.amount}</td></tr>`;
+  });
+
+  html += `</table>`;
+  main.innerHTML = html;
+}
+
+/* NAVIGATION */
+function openYear(year){
+  state = { level:"month", year, month:null };
+  render();
+}
+
+function openMonth(month){
+  state = { ...state, level:"expense", month };
+  render();
+}
+
+function resetView(){
+  state = { level:"year", year:null, month:null };
+  render();
+}
+
+/* CHART */
+let chart;
+
+function updateChart() {
+  const ctx = document.getElementById("expenseChart");
+
+  let labels = [];
+  let values = [];
+
+  if (state.level === "year") {
+    labels = Object.keys(data);
+    values = labels.map(y =>
+      Object.values(data[y])
+        .flat()
+        .reduce((s,e)=>s+e.amount,0)
+    );
+  }
+  else if (state.level === "month") {
+    labels = Object.keys(data[state.year]);
+    values = labels.map(m =>
+      data[state.year][m].reduce((s,e)=>s+e.amount,0)
+    );
+  }
+  else {
+    labels = data[state.year][state.month].map(e=>e.title);
+    values = data[state.year][state.month].map(e=>e.amount);
+  }
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Expenses",
+        data: values
+      }]
+    }
+  });
+}
+
+render();
 </script>
 
 </body>

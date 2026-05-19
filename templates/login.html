@@ -1,60 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body{
-    background: linear-gradient(135deg,#0f172a,#111827);
-    color:white;
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
 }
 
-.card{
-    background:#111827;
-    border:none;
-    border-radius:20px;
-    padding:30px;
-    width:100%;
-    max-width:380px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0b1220;
+  overflow: hidden;
 }
 
-input{
-    background:#1f2937 !important;
-    border:none !important;
-    color:white !important;
-    padding:12px;
+/* subtle glow only */
+body::before, body::after {
+  content: "";
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+  opacity: 0.35;
 }
 
-a{color:#8b5cf6;}
+body::before {
+  background: #3b82f6;
+  top: 15%;
+  left: 20%;
+}
+
+body::after {
+  background: #9333ea;
+  bottom: 15%;
+  right: 20%;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 360px;
+  padding: 28px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+/* FIX: strong readable heading */
+h2 {
+  color: #ffffff;
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  color: #a3b3c7;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+
+  background: rgba(15, 23, 42, 0.6);
+  color: #ffffff;
+
+  outline: none;
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
+}
+
+p {
+  text-align: center;
+  margin-top: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+a {
+  color: #60a5fa;
+  text-decoration: none;
+}
 </style>
 </head>
 
 <body>
 
 <div class="card">
+  <h2>Welcome Back</h2>
+  <div class="subtitle">Login to continue to your dashboard</div>
 
-<h3 class="text-center mb-4">Welcome Back 👋</h3>
+  <input type="email" placeholder="Email">
+  <input type="password" placeholder="Password">
 
-<form method="POST">
+  <button>Login</button>
 
-<input class="form-control mb-3" name="email" placeholder="Email" required>
-
-<input class="form-control mb-3" type="password" name="password" placeholder="Password" required>
-
-<button class="btn btn-primary w-100">Login</button>
-
-</form>
-
-<p class="text-center mt-3">
-New here? <a href="/signup">Create account</a>
-</p>
-
+  <p>Don't have an account? <a href="signup.html">Sign up</a></p>
 </div>
 
 </body>
