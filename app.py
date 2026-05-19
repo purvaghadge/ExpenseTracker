@@ -1,3 +1,5 @@
+import os
+import json
 from flask import Flask, render_template, request, redirect
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -6,7 +8,13 @@ from datetime import datetime
 app = Flask(__name__)
 
 # FIREBASE SETUP
-cred = credentials.Certificate("firebase_key.json")
+
+firebase_key = json.loads(
+    os.environ.get("FIREBASE_KEY")
+)
+
+cred = credentials.Certificate(firebase_key)
+
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
