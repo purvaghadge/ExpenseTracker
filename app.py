@@ -8,21 +8,15 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 
-# Firebase
 firebase_key = json.loads(os.environ.get("FIREBASE_KEY"))
 cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# ================= LOGIN REQUIRED =================
-def login_required():
-    return 'user' in session
-
-# ================= HOME =================
+# ---------------- HOME (DASHBOARD) ----------------
 @app.route('/')
 def index():
-
     if 'user' not in session:
         return redirect('/login')
 
@@ -44,26 +38,21 @@ def index():
         year = str(date.year)
         month = date.strftime("%B")
 
-        if year not in yearly_data:
-            yearly_data[year] = {}
-
-        if month not in yearly_data[year]:
-            yearly_data[year][month] = {"expenses": [], "total": 0}
+        yearly_data.setdefault(year, {})
+        yearly_data[year].setdefault(month, {"expenses": [], "total": 0})
 
         yearly_data[year][month]["expenses"].append(d)
         yearly_data[year][month]["total"] += amount
 
-    return render_template(
-        "index.html",
+    return render_template("dashboard.html",
         yearly_data=yearly_data,
         total=round(total, 2),
         email=session.get('email')
     )
 
-# ================= ADD EXPENSE (AJAX) =================
+# ---------------- ADD ----------------
 @app.route('/add', methods=['POST'])
 def add_expense():
-
     if 'user' not in session:
         return jsonify({"status": "error"})
 
@@ -79,24 +68,16 @@ def add_expense():
 
     return jsonify({"status": "success"})
 
-# ================= DELETE =================
+# ---------------- DELETE ----------------
 @app.route('/delete/<id>')
 def delete(id):
     db.collection('expenses').document(id).delete()
     return redirect('/')
 
-# ================= LOGOUT =================
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
-
-# ================= LOGIN =================
+# ---------------- LOGIN ----------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
     if request.method == 'POST':
-
         email = request.form['email']
         password = request.form['password']
 
@@ -104,7 +85,6 @@ def login():
 
         for u in users:
             user = u.to_dict()
-
             if user['password'] == password:
                 session['user'] = user['uid']
                 session['email'] = email
@@ -114,12 +94,10 @@ def login():
 
     return render_template("login.html")
 
-# ================= SIGNUP =================
+# ---------------- SIGNUP ----------------
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-
     if request.method == 'POST':
-
         email = request.form['email']
         password = request.form['password']
 
@@ -138,6 +116,11 @@ def signup():
 
     return render_template("signup.html")
 
+# ---------------- LOGOUT ----------------
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
 
 if __name__ == '__main__':
     app.run(debug=True)

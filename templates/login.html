@@ -1,143 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login</title>
-
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
-}
-
-body {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #0b1220;
-  overflow: hidden;
-}
-
-/* subtle glow only */
-body::before, body::after {
-  content: "";
-  position: absolute;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  filter: blur(100px);
-  z-index: 0;
-  opacity: 0.35;
-}
-
-body::before {
-  background: #3b82f6;
-  top: 15%;
-  left: 20%;
-}
-
-body::after {
-  background: #9333ea;
-  bottom: 15%;
-  right: 20%;
-}
-
-.card {
-  position: relative;
-  z-index: 1;
-  width: 360px;
-  padding: 28px;
-  border-radius: 14px;
-
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-}
-
-/* FIX: strong readable heading */
-h2 {
-  color: #ffffff;
-  font-size: 22px;
-  margin-bottom: 6px;
-}
-
-.subtitle {
-  color: #a3b3c7;
-  font-size: 13px;
-  margin-bottom: 18px;
-}
-
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.15);
-
-  background: rgba(15, 23, 42, 0.6);
-  color: #ffffff;
-
-  outline: none;
-}
-
-input::placeholder {
-  color: #94a3b8;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 12px;
-
-  border: none;
-  border-radius: 10px;
-
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  color: white;
-  font-weight: 600;
-
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-button:hover {
-  transform: translateY(-2px);
-  opacity: 0.95;
-}
-
-p {
-  text-align: center;
-  margin-top: 14px;
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-a {
-  color: #60a5fa;
-  text-decoration: none;
-}
-</style>
 </head>
 
-<body>
+<body style="background:#0b1220; color:white; display:flex; justify-content:center; align-items:center; height:100vh;">
 
-<div class="card">
-  <h2>Welcome Back</h2>
-  <div class="subtitle">Login to continue to your dashboard</div>
+<form method="POST" action="/login" style="background:#111827; padding:25px; border-radius:12px; width:320px;">
+  <h2>Login</h2>
 
-  <input type="email" placeholder="Email">
-  <input type="password" placeholder="Password">
+  <input name="email" placeholder="Email" style="width:100%; padding:10px; margin:8px 0;">
+  <input name="password" type="password" placeholder="Password" style="width:100%; padding:10px; margin:8px 0;">
 
-  <button>Login</button>
+  <button style="width:100%; padding:10px; background:#3b82f6; color:white;">Login</button>
 
-  <p>Don't have an account? <a href="signup.html">Sign up</a></p>
-</div>
+  <p style="margin-top:10px;">
+    No account? <a href="/signup">Signup</a>
+  </p>
+</form>
 
 </body>
 </html>
