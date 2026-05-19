@@ -1,18 +1,14 @@
 import os
 import json
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
 
-import pyrebase
-
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # required for session
+app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key")
 
-# =========================
-# FIREBASE ADMIN (DB)
-# =========================
+# ================= FIREBASE ADMIN =================
 
 firebase_key = json.loads(os.environ.get("FIREBASE_KEY"))
 cred = credentials.Certificate(firebase_key)
@@ -20,81 +16,7 @@ firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# =========================
-# FIREBASE AUTH (LOGIN)
-# =========================
-
-firebase_config = {
-    "apiKey": "YOUR_API_KEY",
-    "authDomain": "YOUR_PROJECT.firebaseapp.com",
-    "databaseURL": "",
-    "projectId": "YOUR_PROJECT_ID",
-    "storageBucket": "YOUR_PROJECT.appspot.com",
-    "messagingSenderId": "",
-    "appId": ""
-}
-
-firebase = pyrebase.initialize_app(firebase_config)
-auth = firebase.auth()
-
-# =========================
-# LOGIN PAGE
-# =========================
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        try:
-            user = auth.sign_in_with_email_and_password(email, password)
-
-            session['user'] = user['localId']
-            session['email'] = email
-
-            return redirect('/')
-
-        except:
-            return "Invalid credentials"
-
-    return render_template('login.html')
-
-# =========================
-# SIGNUP PAGE
-# =========================
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        try:
-            user = auth.create_user_with_email_and_password(email, password)
-
-            session['user'] = user['localId']
-            session['email'] = email
-
-            return redirect('/')
-
-        except:
-            return "Signup failed"
-
-    return render_template('signup.html')
-
-# =========================
-# LOGOUT
-# =========================
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
-
-# =========================
-# HOME PAGE (PROTECTED)
-# =========================
+# ================= HOME (LOGIN REQUIRED) =================
 
 @app.route('/')
 def index():
@@ -155,12 +77,11 @@ def index():
         yearly_total=round(yearly_total, 2),
         category_totals=category_totals,
         monthly_data=monthly_data,
-        today=datetime.now().strftime("%d %B %Y")
+        today=datetime.now().strftime("%d %B %Y"),
+        email=session.get('email')
     )
 
-# =========================
-# ADD EXPENSE (USER SPECIFIC)
-# =========================
+# ================= ADD EXPENSE =================
 
 @app.route('/add', methods=['POST'])
 def add_expense():
@@ -180,13 +101,73 @@ def add_expense():
 
     return redirect('/')
 
-# =========================
-# DELETE EXPENSE
-# =========================
+# ================= DELETE =================
 
 @app.route('/delete/<id>')
 def delete_expense(id):
-
     db.collection('expenses').document(id).delete()
-
     return redirect('/')
+
+# ================= LOGOUT =================
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+# ================= LOGIN =================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+
+    if request.method == 'POST':
+
+        email = request.form['email']
+        password = request.form['password']
+
+        users_ref = db.collection('users').where('email', '==', email).stream()
+
+        user_doc = None
+        for u in users_ref:
+            user_doc = u.to_dict()
+            break
+
+        if user_doc and user_doc['password'] == password:
+
+            session['user'] = user_doc['uid']
+            session['email'] = email
+
+            return redirect('/')
+
+        return "Invalid credentials"
+
+    return render_template('login.html')
+
+# ================= SIGNUP =================
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+
+    if request.method == 'POST':
+
+        email = request.form['email']
+        password = request.form['password']
+
+        uid = email + "_uid"
+
+        db.collection('users').add({
+            'email': email,
+            'password': password,
+            'uid': uid
+        })
+
+        session['user'] = uid
+        session['email'] = email
+
+        return redirect('/')
+
+    return render_template('signup.html')
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
