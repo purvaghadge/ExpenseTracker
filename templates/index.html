@@ -84,8 +84,13 @@
 
 <!-- CHART -->
 <div class="glass-card p-4 mb-5">
-<h3 class="text-center">Expense Analytics</h3>
-<canvas id="expenseChart"></canvas>
+
+<h3 class="text-center mb-4">Expense Analytics</h3>
+
+<div style="max-width: 450px; margin: auto;">
+    <canvas id="expenseChart"></canvas>
+</div>
+
 </div>
 
 <!-- MONTHLY DATA -->
@@ -154,6 +159,10 @@ Delete
                     '#F59E0B','#EF4444','#EC4899','#84CC16'
                 ]
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true
         }
     });
 </script>

@@ -130,31 +130,24 @@ def logout():
 
 # ================= LOGIN =================
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
 
-        email = request.form['email']
-        password = request.form['password']
+    error = None
 
-        users = list(db.collection('users').where('email', '==', email).stream())
+    if request.method == "POST":
 
-        if not users:
-            return "User not found"
+        username = request.form["username"]
+        password = request.form["password"]
 
-        user_data = users[0].to_dict()
+        if username == "admin" and password == "admin123":
+            session["user"] = username
+            return redirect("/")
 
-        if check_password_hash(user_data['password'], password):
+        else:
+            error = "Invalid Credentials"
 
-            session['user'] = user_data['uid']
-            session['email'] = email
-
-            return redirect('/')
-
-        return "Invalid credentials"
-
-    return render_template('login.html')
-
+    return render_template("login.html", error=error)
 # ================= SIGNUP =================
 
 @app.route('/signup', methods=['GET', 'POST'])
