@@ -17,7 +17,9 @@ if not firebase_key:
     raise Exception("FIREBASE_KEY not set in environment variables")
 
 cred = credentials.Certificate(json.loads(firebase_key))
-firebase_admin.initialize_app(cred)
+
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
@@ -25,6 +27,7 @@ db = firestore.client()
 
 @app.route('/')
 def index():
+
     if 'user' not in session:
         return redirect('/login')
 
@@ -44,18 +47,24 @@ def index():
     current_year = datetime.now().year
 
     for doc in docs:
+
         data = doc.to_dict()
         data['id'] = doc.id
 
         amount = float(data['amount'])
+
         total += amount
 
-        expense_date = datetime.strptime(data['date'], "%d-%m-%Y")
+        expense_date = datetime.strptime(
+            data['date'],
+            "%d-%m-%Y"
+        )
 
         month_key = expense_date.strftime("%Y-%m")
         month_label = expense_date.strftime("%B %Y")
 
         if month_key not in monthly_data:
+
             monthly_data[month_key] = {
                 "label": month_label,
                 "expenses": [],
@@ -72,10 +81,14 @@ def index():
             yearly_total += amount
 
         category = data['category']
-        category_totals[category] = category_totals.get(category, 0) + amount
 
-    # sort months newest first
-    monthly_data = dict(sorted(monthly_data.items(), reverse=True))
+        category_totals[category] = (
+            category_totals.get(category, 0) + amount
+        )
+
+    monthly_data = dict(
+        sorted(monthly_data.items(), reverse=True)
+    )
 
     return render_template(
         'index.html',
@@ -92,6 +105,7 @@ def index():
 
 @app.route('/add', methods=['POST'])
 def add_expense():
+
     if 'user' not in session:
         return redirect('/login')
 
@@ -111,6 +125,7 @@ def add_expense():
 
 @app.route('/delete/<id>')
 def delete_expense(id):
+
     if 'user' not in session:
         return redirect('/login')
 
@@ -125,7 +140,9 @@ def delete_expense(id):
 
 @app.route('/logout')
 def logout():
+
     session.clear()
+
     return redirect('/login')
 
 # ================= LOGIN =================
@@ -137,32 +154,80 @@ def login():
 
     if request.method == "POST":
 
-        username = request.form["username"]
+        email = request.form["email"]
         password = request.form["password"]
 
-        if username == "admin" and password == "admin123":
-            session["user"] = username
-            return redirect("/")
+        users = db.collection('users') \
+            .where('email', '==', email) \
+            .stream()
+
+        user_found = None
+
+        for user in users:
+            user_found = user.to_dict()
+
+        if user_found:
+
+            stored_password = user_found['password']
+
+            if check_password_hash(stored_password, password):
+
+                session['user'] = user_found['uid']
+                session['email'] = user_found['email']
+
+                return redirect('/')
+
+            else:
+                error = "Invalid Password"
 
         else:
-            error = "Invalid Credentials"
+            error = "User not found"
 
-    return render_template("login.html", error=error)
+    return render_template(
+        "login.html",
+        error=error
+    )
+
 # ================= SIGNUP =================
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+
+    error = None
+
     if request.method == 'POST':
 
         email = request.form['email']
         password = request.form['password']
 
-        uid = email + "_uid"
+        existing_users = db.collection('users') \
+            .where('email', '==', email) \
+            .stream()
+
+        user_exists = False
+
+        for user in existing_users:
+            user_exists = True
+
+        if user_exists:
+
+            error = "Email already registered"
+
+            return render_template(
+                'signup.html',
+                error=error
+            )
+
+        uid = email.replace("@", "_").replace(".", "_")
 
         db.collection('users').document(uid).set({
+
             'email': email,
+
             'password': generate_password_hash(password),
+
             'uid': uid
+
         })
 
         session['user'] = uid
@@ -170,8 +235,12 @@ def signup():
 
         return redirect('/')
 
-    return render_template('signup.html')
+    return render_template(
+        'signup.html',
+        error=error
+    )
 
+# ================= MAIN =================
 
 if __name__ == '__main__':
     app.run(debug=True)
